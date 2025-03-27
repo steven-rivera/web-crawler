@@ -3,18 +3,47 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"sync"
 )
 
-func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
-	baseURL, err1 := url.Parse(rawBaseURL)
-	currentURL, err2 := url.Parse(rawCurrentURL)
-	if err1 != nil || err2 != nil {
-		fmt.Printf("Error - crawlPage: couldn't parse URL '%s'\n", rawBaseURL)
+type crawler struct {
+	pages              map[string]int
+	baseURL            *url.URL
+	mu                 *sync.Mutex
+	concurrencyControl chan struct{}
+	wg                 *sync.WaitGroup
+}
+
+func newCrawler(rawBaseURL string, maxGoroutines int) (*crawler, error) {
+	baseURL, err := url.Parse(rawBaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse base URL: %v", err)
+	}
+
+	return &crawler{
+		pages:              make(map[string]int),
+		baseURL:            baseURL,
+		mu:                 &sync.Mutex{},
+		concurrencyControl: make(chan struct{}, maxGoroutines),
+		wg:                 &sync.WaitGroup{},
+	}, nil
+}
+
+func (c *crawler) crawlPage(rawCurrentURL string) {
+	c.concurrencyControl <- struct{}{}
+	defer func() {
+		<-c.concurrencyControl
+		c.wg.Done()
+	}()
+
+	currentURL, err := url.Parse(rawCurrentURL)
+	if err != nil {
+		fmt.Printf("Error - crawlPage: couldn't parse URL '%s': %s\n", rawCurrentURL, err)
 		return
 	}
 
 	// skip other domains
-	if  baseURL.Hostname() != currentURL.Hostname(){
+	if c.baseURL.Hostname() != currentURL.Hostname() {
 		return
 	}
 
@@ -24,11 +53,9 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 	}
 
 	// dont crawl again if already visited
-	if _, visited := pages[normalizedCurrentURL]; visited {
-		pages[normalizedCurrentURL] += 1
+	if isFirst := c.addPageVisit(normalizedCurrentURL); !isFirst {
 		return
 	}
-	pages[normalizedCurrentURL] = 1
 
 	fmt.Printf("Crawling: \"%s\"\n", rawCurrentURL)
 
@@ -38,13 +65,26 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 		return
 	}
 
-	urls, err := getURLsFromHTML(html, rawBaseURL)
+	urls, err := getURLsFromHTML(html, c.baseURL.String())
 	if err != nil {
 		fmt.Printf("Error - getURLsFromHTML: %v\n", err)
 		return
 	}
 
 	for _, url := range urls {
-		crawlPage(rawBaseURL, url, pages)
+		c.wg.Add(1)
+		go c.crawlPage(url)
 	}
+}
+
+func (cfg *crawler) addPageVisit(normalizedURL string) (isFirst bool) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	if _, visited := cfg.pages[normalizedURL]; visited {
+		cfg.pages[normalizedURL] += 1
+		return false
+	}
+	cfg.pages[normalizedURL] = 1
+	return true
 }

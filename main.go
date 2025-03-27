@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+const maxGoroutines = 5
+
 func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
@@ -17,12 +19,20 @@ func main() {
 	}
 
 	rawBaseURL := args[0]
-	fmt.Printf("---Starting crawl of \"%s\"---\n", rawBaseURL)
 
-	pages := make(map[string]int)
-	crawlPage(rawBaseURL, rawBaseURL, pages)
+	c, err := newCrawler(rawBaseURL, maxGoroutines)
+	if err != nil {
+		fmt.Printf("Error - newCrawler: %v", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("---Starting crawl of \"%s\"---\n", rawBaseURL)
+	c.wg.Add(1)
+	go c.crawlPage(rawBaseURL)
+	c.wg.Wait()
+
 	fmt.Println("---Done crawling---")
-	for k, v := range pages {
-		fmt.Println(k, v)
+	for normalizedURL, count := range c.pages {
+		fmt.Println(normalizedURL, count)
 	}
 }
