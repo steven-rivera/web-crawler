@@ -47,8 +47,5 @@ func main() {
 	go c.crawlPage(rawBaseURL)
 	c.wg.Wait()
 
-	fmt.Println("---Done crawling---")
-	for normalizedURL, count := range c.pages {
-		fmt.Println(normalizedURL, count)
-	}
+	printReport(c.pages, c.baseURL.String())
 }
