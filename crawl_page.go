@@ -12,9 +12,10 @@ type crawler struct {
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
 	wg                 *sync.WaitGroup
+	maxPages           int
 }
 
-func newCrawler(rawBaseURL string, maxGoroutines int) (*crawler, error) {
+func newCrawler(rawBaseURL string, maxGoroutines, maxPages int) (*crawler, error) {
 	baseURL, err := url.Parse(rawBaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't parse base URL: %v", err)
@@ -26,6 +27,7 @@ func newCrawler(rawBaseURL string, maxGoroutines int) (*crawler, error) {
 		mu:                 &sync.Mutex{},
 		concurrencyControl: make(chan struct{}, maxGoroutines),
 		wg:                 &sync.WaitGroup{},
+		maxPages:           maxPages,
 	}, nil
 }
 
@@ -35,6 +37,11 @@ func (c *crawler) crawlPage(rawCurrentURL string) {
 		<-c.concurrencyControl
 		c.wg.Done()
 	}()
+
+	
+	if c.pagesVisited() >= c.maxPages {
+		return
+	}
 
 	currentURL, err := url.Parse(rawCurrentURL)
 	if err != nil {
@@ -77,14 +84,20 @@ func (c *crawler) crawlPage(rawCurrentURL string) {
 	}
 }
 
-func (cfg *crawler) addPageVisit(normalizedURL string) (isFirst bool) {
-	cfg.mu.Lock()
-	defer cfg.mu.Unlock()
+func (c *crawler) addPageVisit(normalizedURL string) (isFirst bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if _, visited := cfg.pages[normalizedURL]; visited {
-		cfg.pages[normalizedURL] += 1
+	if _, visited := c.pages[normalizedURL]; visited {
+		c.pages[normalizedURL] += 1
 		return false
 	}
-	cfg.pages[normalizedURL] = 1
+	c.pages[normalizedURL] = 1
 	return true
+}
+
+func (c *crawler) pagesVisited() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.pages)
 }
