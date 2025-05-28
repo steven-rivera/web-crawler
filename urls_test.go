@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"reflect"
 	"testing"
 )
@@ -10,7 +11,6 @@ func TestNormalizeURL(t *testing.T) {
 		name     string
 		inputURL string
 		expected string
-		wantErr  bool
 	}{
 		{
 			name:     "remove scheme https",
@@ -32,21 +32,16 @@ func TestNormalizeURL(t *testing.T) {
 			inputURL: "http://BLOG.boot.dev/path/",
 			expected: "blog.boot.dev/path",
 		},
-		{
-			name:     "handle invalid URL",
-			inputURL: `:\\invalidURL`,
-			expected: "",
-			wantErr:  true,
-		},
 	}
 
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := normalizeURL(tc.inputURL)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("Test %v - FAIL: unexpected error: %v", i, err)
-				return
+			parsedURL, err := url.Parse(tc.inputURL)
+			if err != nil {
+				t.Errorf("Test %v - BUG: Invalid inputURL '%s'", i, tc.inputURL)
 			}
+			actual := normalizeURL(parsedURL)
+
 			if actual != tc.expected {
 				t.Errorf("Test %v - FAIL: expected URL: %v, actual: %v", i, tc.expected, actual)
 			}
@@ -60,7 +55,6 @@ func TestGetURLsFromHTML(t *testing.T) {
 		inputURL  string
 		inputBody string
 		expected  []string
-		wantErr   bool
 	}{
 		{
 			name:     "absolute and relative URLs",
@@ -147,30 +141,15 @@ func TestGetURLsFromHTML(t *testing.T) {
 `,
 			expected: make([]string, 0),
 		},
-		{
-			name:     "handle invalid base URL",
-			inputURL: `:\\invalidBaseURL`,
-			inputBody: `
-<html>
-	<body>
-		<a href="/path">
-			<span>Boot.dev</span>
-		</a>
-	</body>
-</html>
-`,
-			expected: nil,
-			wantErr:  true,
-		},
 	}
 
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("Test %v - FAIL: unexpected error: %v", i, err)
-				return
+			parsedURL, err := url.Parse(tc.inputURL)
+			if err != nil {
+				t.Errorf("Test %v - BUG: Invalid inputURL '%s'", i, tc.inputURL)
 			}
+			actual, _ := getURLsFromHTML(tc.inputBody, parsedURL)
 			if !reflect.DeepEqual(actual, tc.expected) {
 				t.Errorf("Test %v - FAIL: expected: %v, actual: %v", i, tc.expected, actual)
 			}

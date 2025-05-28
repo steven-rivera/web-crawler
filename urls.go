@@ -14,25 +14,15 @@ and remove trailing slashes.
 
 Ex: http://BLOG.example.com/path/ -> blog.example.com/path
 */
-func normalizeURL(rawURL string) (string, error) {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return "", err
-	}
-
+func normalizeURL(parsedURL *url.URL) string {
 	normal := parsedURL.Host + parsedURL.EscapedPath()
 	normal = strings.ToLower(normal)
 	normal = strings.TrimSuffix(normal, "/")
 
-	return normal, nil
+	return normal
 }
 
-func getURLsFromHTML(htmlBody, htmlURL string) ([]string, error) {
-	htmlURLStruct, err := url.Parse(htmlURL)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't parse URL: %v", err)
-	}
-
+func getURLsFromHTML(htmlBody string, parsedURL *url.URL) ([]string, error) {
 	doc, err := html.Parse(strings.NewReader(htmlBody))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't parse HTML: %v", err)
@@ -48,7 +38,7 @@ func getURLsFromHTML(htmlBody, htmlURL string) ([]string, error) {
 						break
 					}
 					// Convert relative urls (/path) to absolute urls (example.com/path)
-					urls = append(urls, htmlURLStruct.ResolveReference(href).String())
+					urls = append(urls, parsedURL.ResolveReference(href).String())
 					break
 				}
 			}
