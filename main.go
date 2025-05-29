@@ -9,19 +9,23 @@ import (
 )
 
 const (
-	SAVE_PAGES_DIR   = "PAGES"
-	REPORT_FILE_NAME = "CRAWL_REPORT.txt"
+	SAVE_PAGES_DIR         = "PAGES"
+	REPORT_FILE_NAME       = "CRAWL_REPORT.txt"
+	DEFAULT_MAX_GOROUTINES = 3
+	DEFAULT_MAX_PAGES      = 1000
 )
 
 func main() {
 	var startURL string
 	var maxGoroutines int
+	var maxPages int
 	var sameDomain bool
 	var savePages bool
 	var deletePrevPages bool
 
 	flag.StringVar(&startURL, "startURL", "", "the URL used to start the crawl")
-	flag.IntVar(&maxGoroutines, "maxGoroutines", 3, "max number of goroutines to spawn")
+	flag.IntVar(&maxGoroutines, "maxGoroutines", DEFAULT_MAX_GOROUTINES, "max number of goroutines to spawn")
+	flag.IntVar(&maxPages, "maxPages", DEFAULT_MAX_PAGES, "stop crawl of N pages visited")
 	flag.BoolVar(&sameDomain, "sameDomain", false, "limit crawling to pages with same domain as startURL")
 	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s/", SAVE_PAGES_DIR))
 	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete pages from previous crawl in ./%s/", SAVE_PAGES_DIR))
@@ -46,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	crawler, err := NewCrawler(startURL, maxGoroutines, sameDomain, savePages)
+	crawler, err := NewCrawler(startURL, maxGoroutines, maxPages, sameDomain, savePages)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, red("NewCrawler: %s"), err)
 	}

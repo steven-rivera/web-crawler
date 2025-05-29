@@ -16,13 +16,14 @@ type Crawler struct {
 	toVisit       []string
 	toVisitMutex  *sync.Mutex
 	maxGoroutines int
+	maxPages      int
 	wg            *sync.WaitGroup
 	startURL      *url.URL
 	sameDomain    bool
 	savePages     bool
 }
 
-func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool, savePages bool) (*Crawler, error) {
+func NewCrawler(startingURL string, maxGoroutines int, maxPages int, sameDomain bool, savePages bool) (*Crawler, error) {
 	startingURLStruct, err := url.Parse(startingURL)
 	if err != nil {
 		return nil, err
@@ -34,6 +35,7 @@ func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool, savePage
 		toVisit:       []string{},
 		toVisitMutex:  &sync.Mutex{},
 		maxGoroutines: maxGoroutines,
+		maxPages:      maxPages,
 		wg:            &sync.WaitGroup{},
 		startURL:      startingURLStruct,
 		sameDomain:    sameDomain,
@@ -79,6 +81,11 @@ func (c *Crawler) StartCrawl() {
 func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	defer c.wg.Done()
 
+	if c.pagesVisited() >= c.maxPages {
+		// Skip if reached maxPages crawled
+		return
+	}
+
 	currURL, err := url.Parse(rawCurrURL)
 	if err != nil {
 		// Skip invalid URL
@@ -117,7 +124,7 @@ func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	}
 
 	if c.savePages {
-		err := c.savePageToDisk(html, normalizedURL)
+		err := c.savePageToDisk(html, currURL)
 		if err != nil {
 			log.Printf(yellow("Error: %v"), err)
 		}
@@ -139,7 +146,15 @@ func (c *Crawler) addPageVisit(normalizedURL string) {
 	c.visited[normalizedURL] += 1
 }
 
-func (c *Crawler) savePageToDisk(html string, fileName string) error {
+func (c *Crawler) pagesVisited() int {
+	c.vistedMutex.Lock()
+	defer c.vistedMutex.Unlock()
+
+	return len(c.visited)
+}
+
+func (c *Crawler) savePageToDisk(html string, currURL *url.URL) error {
+	fileName := currURL.Host + currURL.EscapedPath()
 	escapedFileNmae := strings.ReplaceAll(fileName, "/", "_")
 	path := filepath.Join(SAVE_PAGES_DIR, escapedFileNmae)
 
