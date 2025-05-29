@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 )
@@ -12,16 +13,24 @@ type page struct {
 	url   string
 }
 
-func printReport(pages map[string]int, baseURL string) {
-	fmt.Println("=============================")
-	fmt.Printf("REPORT for %s\n", baseURL)
-	fmt.Println("=============================")
+func createReport(pages map[string]int, baseURL string) error {
+	file, err := os.Create(REPORT_FILE_NAME)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	title := fmt.Sprintf("REPORT for crawl starting at %s\n", baseURL)
+
+	fmt.Fprint(file, strings.Repeat("=", len(title)), "\n")
+	fmt.Fprint(file, title)
+	fmt.Fprint(file, strings.Repeat("=", len(title)), "\n\n")
 
 	sortedPages := sortPages(pages)
-
 	for _, page := range sortedPages {
-		fmt.Printf("Found %d internal links to %s\n", page.count, page.url)
+		fmt.Fprintf(file, "Found %d links to %s\n", page.count, page.url)
 	}
+	return nil
 }
 
 func sortPages(pages map[string]int) []page {

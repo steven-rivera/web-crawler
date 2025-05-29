@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	SAVE_PAGES_DIR = "PAGES"
+	SAVE_PAGES_DIR   = "PAGES"
+	REPORT_FILE_NAME = "CRAWL_REPORT.txt"
 )
 
 func main() {
@@ -53,5 +54,11 @@ func main() {
 	log.Printf(green(`--- Starting crawl at "%s" ---`), startURL)
 	crawler.StartCrawl()
 
-	printReport(crawler.visited, startURL)
+	log.Print(grey("Generating report..."))
+	err = createReport(crawler.visited, startURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, red("Failed creating report: %s"), err)
+		os.Exit(1)
+	}
+	log.Printf(green("Successfully created report %s"), REPORT_FILE_NAME)
 }
