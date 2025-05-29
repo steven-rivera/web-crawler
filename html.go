@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-
 func getHTML(rawURL string) (string, error) {
 	resp, err := http.Get(rawURL)
 	if err != nil {
@@ -16,10 +15,10 @@ func getHTML(rawURL string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return "", fmt.Errorf("got http status code: %d", resp.StatusCode)
+		return "", fmt.Errorf(`"%s" returned status code: %d`, rawURL, resp.StatusCode)
 	}
-	if contentType := resp.Header.Get("content-type");  !strings.HasPrefix(contentType, "text/html") {
-		return "", fmt.Errorf("got content of type: '%s'", contentType)
+	if contentType := resp.Header.Get("content-type"); !strings.HasPrefix(contentType, "text/html") {
+		return "", fmt.Errorf(`"%s" returned content of type: "%s"`, rawURL, contentType)
 	}
 
 	html, err := io.ReadAll(resp.Body)
