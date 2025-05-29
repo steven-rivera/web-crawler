@@ -98,10 +98,9 @@ func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	}
 
 	normalizedURL := normalizeURL(currURL)
-	defer c.addPageVisit(normalizedURL)
 
 	// dont crawl again if already visited
-	if c.visitedPage(normalizedURL) {
+	if firstVisit := c.addPageVisit(normalizedURL); !firstVisit {
 		return
 	}
 
@@ -131,19 +130,17 @@ func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	}
 }
 
-func (c *Crawler) visitedPage(normalizedURL string) bool {
+func (c *Crawler) addPageVisit(normalizedURL string) (firstVisit bool) {
 	c.vistedMutex.Lock()
 	defer c.vistedMutex.Unlock()
 
-	_, ok := c.visited[normalizedURL]
-	return ok
-}
-
-func (c *Crawler) addPageVisit(normalizedURL string) {
-	c.vistedMutex.Lock()
-	defer c.vistedMutex.Unlock()
+	if _, ok := c.visited[normalizedURL]; !ok {
+		c.visited[normalizedURL] = 1
+		return true
+	}
 
 	c.visited[normalizedURL] += 1
+	return false
 }
 
 func (c *Crawler) pagesVisited() int {
