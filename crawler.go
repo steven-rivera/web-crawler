@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -16,9 +19,10 @@ type Crawler struct {
 	wg            *sync.WaitGroup
 	startURL      *url.URL
 	sameDomain    bool
+	savePages     bool
 }
 
-func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool) (*Crawler, error) {
+func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool, savePages bool) (*Crawler, error) {
 	startingURLStruct, err := url.Parse(startingURL)
 	if err != nil {
 		return nil, err
@@ -33,6 +37,7 @@ func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool) (*Crawle
 		wg:            &sync.WaitGroup{},
 		startURL:      startingURLStruct,
 		sameDomain:    sameDomain,
+		savePages:     savePages,
 	}, nil
 }
 
@@ -49,7 +54,6 @@ func (c *Crawler) StartCrawl() {
 					nextURL := c.popURL()
 					if nextURL == "" {
 						// Wait for other goroutines to add URLs to stack
-						log.Printf("Goroutine %d sleeping", id)
 						time.Sleep(time.Second)
 						continue
 					}
@@ -58,7 +62,7 @@ func (c *Crawler) StartCrawl() {
 				}
 
 			}
-		}(i, ch)
+		}(i+1, ch)
 	}
 
 	c.wg.Add(1)
@@ -94,8 +98,8 @@ func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 		return
 	}
 
-	log.Printf(grey(`Goroutine %d: "%s"`), id, rawCurrURL)
-	html, err := getHTML(rawCurrURL)
+	log.Printf(grey(`Goroutine %d crawling: %s`), id, rawCurrURL)
+	html, err := getHTML(currURL)
 	if err != nil {
 		log.Printf(yellow("Error: %v"), err)
 		return
@@ -110,6 +114,13 @@ func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	for _, url := range urls {
 		c.wg.Add(1)
 		c.appendURL(url)
+	}
+
+	if c.savePages {
+		err := c.savePageToDisk(html, normalizedURL)
+		if err != nil {
+			log.Printf(yellow("Error: %v"), err)
+		}
 	}
 }
 
@@ -128,10 +139,11 @@ func (c *Crawler) addPageVisit(normalizedURL string) {
 	c.visited[normalizedURL] += 1
 }
 
-func (c *Crawler) pagesVisited() int {
-	c.vistedMutex.Lock()
-	defer c.vistedMutex.Unlock()
-	return len(c.visited)
+func (c *Crawler) savePageToDisk(html string, fileName string) error {
+	escapedFileNmae := strings.ReplaceAll(fileName, "/", "_")
+	path := filepath.Join(SAVE_PAGES_DIR, escapedFileNmae)
+
+	return os.WriteFile(path, []byte(html), 0666)
 }
 
 func (c *Crawler) appendURL(url string) {
