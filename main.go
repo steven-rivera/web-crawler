@@ -28,7 +28,7 @@ func main() {
 	flag.IntVar(&maxPages, "maxPages", DEFAULT_MAX_PAGES, "stop crawl of N pages visited")
 	flag.BoolVar(&sameDomain, "sameDomain", false, "limit crawling to pages with same domain as startURL")
 	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s/", SAVE_PAGES_DIR))
-	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete pages from previous crawl in ./%s/", SAVE_PAGES_DIR))
+	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete ./%s/ directory from previous crawl if exists", SAVE_PAGES_DIR))
 
 	flag.Parse()
 
