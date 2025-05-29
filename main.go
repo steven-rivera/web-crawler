@@ -3,29 +3,35 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 )
 
 func main() {
 	var startURL string
 	var maxGoroutines int
-	var maxPages int
+	var sameDomain bool
 
-	flag.StringVar(&startURL, "url", "", "the URL used to start the crawl")
-	flag.IntVar(&maxGoroutines, "maxGoroutines", 1, "max number of goroutines to spawn")
-	flag.IntVar(&maxPages, "maxPages", 1, "max number of pages to crawl")
+	flag.StringVar(&startURL, "startURL", "", "the URL used to start the crawl")
+	flag.IntVar(&maxGoroutines, "maxGoroutines", 3, "max number of goroutines to spawn")
+	flag.BoolVar(&sameDomain, "sameDomain", false, "limit crawling to pages with same domain as startURL")
 
 	flag.Parse()
 
 	if startURL == "" {
-		fmt.Fprintln(os.Stderr, "Error: -startURL is required")
+		fmt.Fprint(os.Stderr, red("-startURL is required\n\n"))
+		fmt.Fprintf(os.Stderr, "Usage:\n")
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n")
 		os.Exit(1)
 	}
 
-	crawler := NewCrawler(startURL, maxGoroutines)
+	crawler, err := NewCrawler(startURL, maxGoroutines, sameDomain)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, red("NewCrawler: %s"), err)
+	}
 
-	fmt.Printf("---Starting crawl of \"%s\"---\n", startURL)
+	log.Printf(green(`--- Starting crawl at "%s" ---`), startURL)
 	crawler.StartCrawl()
 
 	printReport(crawler.visited, startURL)
