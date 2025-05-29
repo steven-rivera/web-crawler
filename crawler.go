@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -13,73 +14,96 @@ type Crawler struct {
 	toVisitMutex  *sync.Mutex
 	maxGoroutines int
 	wg            *sync.WaitGroup
+	startURL      *url.URL
+	sameDomain    bool
 }
 
-func NewCrawler(startingURL string, maxGoroutines int) *Crawler {
+func NewCrawler(startingURL string, maxGoroutines int, sameDomain bool) (*Crawler, error) {
+	startingURLStruct, err := url.Parse(startingURL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Crawler{
 		visited:       make(map[string]int),
 		vistedMutex:   &sync.Mutex{},
-		toVisit:       []string{startingURL},
+		toVisit:       []string{},
 		toVisitMutex:  &sync.Mutex{},
 		maxGoroutines: maxGoroutines,
 		wg:            &sync.WaitGroup{},
-	}
+		startURL:      startingURLStruct,
+		sameDomain:    sameDomain,
+	}, nil
 }
 
 func (c *Crawler) StartCrawl() {
+	ch := make(chan struct{}, c.maxGoroutines)
+
 	for i := range c.maxGoroutines {
-		go func(id int) {
+		go func(id int, ch chan struct{}) {
 			for {
-				nextURL := c.popURL()
-				if nextURL == "" {
-					// Wait for other goroutines to add URLs to stack
-					time.Sleep(time.Second)
-					continue
+				select {
+				case <-ch:
+					return
+				default:
+					nextURL := c.popURL()
+					if nextURL == "" {
+						// Wait for other goroutines to add URLs to stack
+						log.Printf("Goroutine %d sleeping", id)
+						time.Sleep(time.Second)
+						continue
+					}
+
+					c.crawlPage(nextURL, id)
 				}
 
-				c.crawlPage(nextURL, id)
 			}
-		}(i)
+		}(i, ch)
 	}
 
 	c.wg.Add(1)
+	c.appendURL(c.startURL.String())
 	c.wg.Wait()
+
+	// Signal all goroutines to return once done crawling
+	for range c.maxGoroutines {
+		ch <- struct{}{}
+	}
+	close(ch)
 }
 
-func (c *Crawler) crawlPage(currURL string, id int) {
+func (c *Crawler) crawlPage(rawCurrURL string, id int) {
 	defer c.wg.Done()
 
-	if c.pagesVisited() >= 10 {
-		return
-	}
-
-	log.Printf(`Goroutine %d: "%s"`, id, currURL)
-
-	// // skip other domains
-	// if c.startURLStruct.Hostname() != currentURL.Hostname() {
-	// 	return
-	// }
-
-	currURLNormalized, err := normalizeURL(currURL)
+	currURL, err := url.Parse(rawCurrURL)
 	if err != nil {
-		log.Printf("Error: %s", err)
+		// Skip invalid URL
 		return
 	}
+
+	if c.sameDomain && c.startURL.Hostname() != currURL.Hostname() {
+		// Skip if only crawling start domain
+		return
+	}
+
+	normalizedURL := normalizeURL(currURL)
+	defer c.addPageVisit(normalizedURL)
 
 	// dont crawl again if already visited
-	if visited := c.addPageVisit(currURLNormalized); visited {
+	if c.visitedPage(normalizedURL) {
 		return
 	}
 
-	html, err := getHTML(currURL)
+	log.Printf(grey(`Goroutine %d: "%s"`), id, rawCurrURL)
+	html, err := getHTML(rawCurrURL)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		log.Printf(yellow("Error: %v"), err)
 		return
 	}
 
 	urls, err := getURLsFromHTML(html, currURL)
 	if err != nil {
-		log.Printf("Error: %v", err)
+		log.Printf(yellow("Error: %v"), err)
 		return
 	}
 
@@ -89,16 +113,19 @@ func (c *Crawler) crawlPage(currURL string, id int) {
 	}
 }
 
-func (c *Crawler) addPageVisit(normalizedURL string) (visited bool) {
+func (c *Crawler) visitedPage(normalizedURL string) bool {
 	c.vistedMutex.Lock()
 	defer c.vistedMutex.Unlock()
 
-	if _, visited := c.visited[normalizedURL]; visited {
-		c.visited[normalizedURL] += 1
-		return true
-	}
-	c.visited[normalizedURL] = 1
-	return false
+	_, ok := c.visited[normalizedURL]
+	return ok
+}
+
+func (c *Crawler) addPageVisit(normalizedURL string) {
+	c.vistedMutex.Lock()
+	defer c.vistedMutex.Unlock()
+
+	c.visited[normalizedURL] += 1
 }
 
 func (c *Crawler) pagesVisited() int {
