@@ -37,8 +37,13 @@ func getURLsFromHTML(htmlBody string, parsedURL *url.URL) ([]string, error) {
 					if err != nil {
 						break
 					}
+
 					// Convert relative urls (/path) to absolute urls (example.com/path)
-					urls = append(urls, parsedURL.ResolveReference(href).String())
+					absoluteHref := parsedURL.ResolveReference(href)
+					if strings.HasPrefix(absoluteHref.Scheme, "http") {
+						urls = append(urls, absoluteHref.String())
+					}
+
 					break
 				}
 			}
