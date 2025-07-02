@@ -11,24 +11,24 @@ import (
 const (
 	CORPUS_DIR             = "CORPUS"
 	REPORT_FILE_NAME       = "CRAWL_REPORT.txt"
-	DEFAULT_MAX_GOROUTINES = 3
+	DEFAULT_NUM_GOROUTINES = 3
 	DEFAULT_MAX_PAGES      = 1000
 )
 
 func main() {
 	var startURL string
-	var maxGoroutines int
+	var numGoroutines int
 	var maxPages int
 	var sameDomain bool
 	var savePages bool
 	var deletePrevPages bool
 
 	flag.StringVar(&startURL, "startURL", "", "the URL used to start the crawl")
-	flag.IntVar(&maxGoroutines, "maxGoroutines", DEFAULT_MAX_GOROUTINES, "max number of goroutines to spawn")
-	flag.IntVar(&maxPages, "maxPages", DEFAULT_MAX_PAGES, "stop crawl of N pages visited")
+	flag.IntVar(&numGoroutines, "numGoroutines", DEFAULT_NUM_GOROUTINES, "number of goroutines to spawn")
+	flag.IntVar(&maxPages, "maxPages", DEFAULT_MAX_PAGES, "stop crawl after N pages visited")
 	flag.BoolVar(&sameDomain, "sameDomain", false, "limit crawling to pages with same domain as startURL")
-	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s/", CORPUS_DIR))
-	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete ./%s/ directory from previous crawl if exists", CORPUS_DIR))
+	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s", CORPUS_DIR))
+	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete ./%s directory from previous crawl if exists", CORPUS_DIR))
 
 	flag.Parse()
 
@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	crawler, err := NewCrawler(startURL, maxGoroutines, maxPages, sameDomain, savePages)
+	crawler, err := NewCrawler(startURL, numGoroutines, maxPages, sameDomain, savePages)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, red("NewCrawler: %s"), err)
 	}

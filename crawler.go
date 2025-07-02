@@ -208,10 +208,6 @@ func (c *Crawler) popleftURL() string {
 		return ""
 	}
 
-	// DEPTH FIRST SEARCH
-	// url := c.toVisit[size-1]
-	// c.toVisit = c.toVisit[:size-1]
-
 	// BREADTH FIRST SEARCH
 	url := c.toVisitQueue[0]
 	c.toVisitQueue = c.toVisitQueue[1:]
