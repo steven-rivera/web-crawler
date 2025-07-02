@@ -1,1 +1,1 @@
-go run . --startURL https://en.wikipedia.org/wiki/Web_crawler --sameDomain --maxPages=100 --maxGoroutines=5 --savePages --deletePrevPages
+go run . --startURL https://en.wikipedia.org/wiki/Web_crawler --sameDomain --maxPages=100 --numGoroutines=5 --savePages --deletePrevPages
