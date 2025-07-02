@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
@@ -156,12 +155,11 @@ func (c *Crawler) pagesVisited() int {
 }
 
 func (c *Crawler) savePageToDisk(html string, currURL *url.URL) error {
-	hostDir := strings.ReplaceAll(currURL.Host, ".", "_")
-	documentDir := filepath.Join(CORPUS_DIR, hostDir)
+	domainDir := filepath.Join(CORPUS_DIR, currURL.Host)
 
-	_, err := os.Stat(documentDir)
+	_, err := os.Stat(domainDir)
 	if errors.Is(err, fs.ErrNotExist) {
-		err := os.Mkdir(documentDir, 0o750)
+		err := os.Mkdir(domainDir, 0o750)
 		if err != nil {
 			return err
 		}
@@ -169,7 +167,7 @@ func (c *Crawler) savePageToDisk(html string, currURL *url.URL) error {
 
 	hash := md5.Sum([]byte(html))
 	fileName := fmt.Sprintf("%x.json", hash)
-	filePath := filepath.Join(documentDir, fileName)
+	filePath := filepath.Join(domainDir, fileName)
 
 	type Document struct {
 		Url     string `json:"url"`
