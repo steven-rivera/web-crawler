@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	SAVE_PAGES_DIR         = "PAGES"
+	CORPUS_DIR             = "CORPUS"
 	REPORT_FILE_NAME       = "CRAWL_REPORT.txt"
 	DEFAULT_MAX_GOROUTINES = 3
 	DEFAULT_MAX_PAGES      = 1000
@@ -27,18 +27,18 @@ func main() {
 	flag.IntVar(&maxGoroutines, "maxGoroutines", DEFAULT_MAX_GOROUTINES, "max number of goroutines to spawn")
 	flag.IntVar(&maxPages, "maxPages", DEFAULT_MAX_PAGES, "stop crawl of N pages visited")
 	flag.BoolVar(&sameDomain, "sameDomain", false, "limit crawling to pages with same domain as startURL")
-	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s/", SAVE_PAGES_DIR))
-	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete ./%s/ directory from previous crawl if exists", SAVE_PAGES_DIR))
+	flag.BoolVar(&savePages, "savePages", false, fmt.Sprintf("save crawled pages to ./%s/", CORPUS_DIR))
+	flag.BoolVar(&deletePrevPages, "deletePrevPages", false, fmt.Sprintf("delete ./%s/ directory from previous crawl if exists", CORPUS_DIR))
 
 	flag.Parse()
 
 	if deletePrevPages {
-		os.RemoveAll(SAVE_PAGES_DIR)
+		os.RemoveAll(CORPUS_DIR)
 	}
 
-	err := os.Mkdir(SAVE_PAGES_DIR, 0750)
+	err := os.Mkdir(CORPUS_DIR, 0o750)
 	if err != nil && !errors.Is(err, os.ErrExist) {
-		fmt.Fprint(os.Stderr, red("unable to create ./%s/ directory"), SAVE_PAGES_DIR)
+		fmt.Fprint(os.Stderr, red("unable to create ./%s/ directory"), CORPUS_DIR)
 		os.Exit(1)
 	}
 

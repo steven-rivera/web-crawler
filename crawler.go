@@ -1,6 +1,11 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -151,11 +156,40 @@ func (c *Crawler) pagesVisited() int {
 }
 
 func (c *Crawler) savePageToDisk(html string, currURL *url.URL) error {
-	fileName := currURL.Host + currURL.EscapedPath()
-	escapedFileNmae := strings.ReplaceAll(fileName, "/", "_")
-	path := filepath.Join(SAVE_PAGES_DIR, escapedFileNmae)
+	hostDir := strings.ReplaceAll(currURL.Host, ".", "_")
+	documentDir := filepath.Join(CORPUS_DIR, hostDir)
 
-	return os.WriteFile(path, []byte(html), 0666)
+	_, err := os.Stat(documentDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		err := os.Mkdir(documentDir, 0o750)
+		if err != nil {
+			return err
+		}
+	}
+
+	hash := md5.Sum([]byte(html))
+	fileName := fmt.Sprintf("%x.json", hash)
+	filePath := filepath.Join(documentDir, fileName)
+
+	type Document struct {
+		Url     string `json:"url"`
+		Content string `json:"content"`
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+
+	return encoder.Encode(Document{
+		Url:     currURL.String(),
+		Content: html,
+	})
 }
 
 func (c *Crawler) appendURL(url string) {
