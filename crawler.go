@@ -18,7 +18,7 @@ import (
 type Crawler struct {
 	visited       map[string]int
 	vistedMutex   *sync.Mutex
-	toVisit       []string
+	toVisitQueue  []string
 	toVisitMutex  *sync.Mutex
 	maxGoroutines int
 	maxPages      int
@@ -37,7 +37,7 @@ func NewCrawler(startingURL string, maxGoroutines int, maxPages int, sameDomain 
 	return &Crawler{
 		visited:       make(map[string]int),
 		vistedMutex:   &sync.Mutex{},
-		toVisit:       []string{},
+		toVisitQueue:  []string{},
 		toVisitMutex:  &sync.Mutex{},
 		maxGoroutines: maxGoroutines,
 		maxPages:      maxPages,
@@ -58,7 +58,7 @@ func (c *Crawler) StartCrawl() {
 				case <-ch:
 					return
 				default:
-					nextURL := c.popURL()
+					nextURL := c.popleftURL()
 					if nextURL == "" {
 						// Wait for other goroutines to add URLs to stack
 						time.Sleep(time.Second)
@@ -196,19 +196,24 @@ func (c *Crawler) appendURL(url string) {
 	c.toVisitMutex.Lock()
 	defer c.toVisitMutex.Unlock()
 
-	c.toVisit = append(c.toVisit, url)
+	c.toVisitQueue = append(c.toVisitQueue, url)
 }
 
-func (c *Crawler) popURL() string {
+func (c *Crawler) popleftURL() string {
 	c.toVisitMutex.Lock()
 	defer c.toVisitMutex.Unlock()
 
-	size := len(c.toVisit)
+	size := len(c.toVisitQueue)
 	if size == 0 {
 		return ""
 	}
 
-	url := c.toVisit[size-1]
-	c.toVisit = c.toVisit[:size-1]
+	// DEPTH FIRST SEARCH
+	// url := c.toVisit[size-1]
+	// c.toVisit = c.toVisit[:size-1]
+
+	// BREADTH FIRST SEARCH
+	url := c.toVisitQueue[0]
+	c.toVisitQueue = c.toVisitQueue[1:]
 	return url
 }
