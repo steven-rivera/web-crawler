@@ -55,6 +55,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, red("NewCrawler: %s"), err)
 	}
 
+	printAsciiArt()
 	log.Printf(green(`--- Starting crawl at "%s" ---`), startURL)
 	crawler.StartCrawl()
 
@@ -66,3 +67,34 @@ func main() {
 	}
 	log.Printf(green("Successfully created report %s"), REPORT_FILE_NAME)
 }
+
+func printAsciiArt() {
+	fmt.Println(`\'-._(   / ` + `          )         ` + red(`                                                                                 `) + grey(`                   `))
+	fmt.Println(` \  .'-._\ ` + `          (         ` + red(`                                                                                 `) + grey(`      /      \     `))
+	fmt.Println(`-.\'    .-;` + `          )         ` + red(`                                                                                 `) + grey(`   \  \  ,,  /  /  `))
+	fmt.Println(`   \  .'   ` + grey(`        _.._        `) + red(`   __      __      ___.       _________                      .__                 `) + grey("    '-.`\\()/`.-'   "))
+	fmt.Println(`.--.\'     ` + grey("      .`    `.      ") + red(`  /  \    /  \ ____\_ |__     \_   ___ \____________ __  _  _|  |   ___________  `) + grey(`   .--_'(  )'_--.  `))
+	fmt.Println("    `      " + grey(`     /        \     `) + red(`  \   \/\/   // __ \| __ \    /    \  \/\_  __ \__  \\ \/ \/ /  | _/ __ \_  __ \ `) + grey("  / /` /`\"\"`\\ `\\ \\ "))
+	fmt.Println(`           ` + grey(`  ,  |   `) + red("><") + grey(`   |  ,  `) + red(`   \        /\  ___/| \_\ \   \     \____|  | \// __ \\     /|  |_\  ___/|  | \/ `) + grey(`   |  |  `) + red("><") + grey(`  |  |  `))
+	fmt.Println(`           ` + grey(` . \  \      /  / . `) + red(`    \__/\  /  \___  >___  /    \______  /|__|  (____  /\/\_/ |____/\___  >__|    `) + grey(`   \  \      /  /  `) + "     .'\\`-'  ")
+	fmt.Println(`           ` + grey("  \\_'--`(  )'--'_/  ") + red(`         \/       \/    \/            \/            \/                 \/        `) + grey(`       '.__.'      `) + `  _.'   \    `)
+	fmt.Println(`           ` + grey(`    .--'/()\'--.    `) + red(`                                                                                 `) + `          )        ` + `-;       \._ `)
+	fmt.Println(`           ` + grey("   /  /` \"\" `\\  \\   ") + red(`                                                                                 `) + `          (        ` + "\\ `'-,_,-'\\  ")
+	fmt.Println(`           ` + grey(`      \      /      `) + red(`                                                                                 `) + `          )        ` + "/____)_`-._\\ ")
+	fmt.Println()
+}
+
+// BEFORE gofmt
+//
+// fmt.Println(`\'-._(   / ` +      `          )         `                       + red(`                                                                                 `) + grey(`                   `) )
+// fmt.Println(` \  .'-._\ ` +      `          (         `                       + red(`                                                                                 `) + grey(`      /      \     `) )
+// fmt.Println(`-.\'    .-;` +      `          )         `                       + red(`                                                                                 `) + grey(`   \  \  ,,  /  /  `) )
+// fmt.Println(`   \  .'   ` + grey(`        _.._        `)                      + red(`   __      __      ___.       _________                      .__                 `) + grey("    '-.`\\()/`.-'   "))
+// fmt.Println(`.--.\'     ` + grey("      .`    `.      ")                      + red(`  /  \    /  \ ____\_ |__     \_   ___ \____________ __  _  _|  |   ___________  `) + grey(`   .--_'(  )'_--.  `) )
+// fmt.Println("    `      " + grey(`     /        \     `)                      + red(`  \   \/\/   // __ \| __ \    /    \  \/\_  __ \__  \\ \/ \/ /  | _/ __ \_  __ \ `) + grey("  / /` /`\"\"`\\ `\\ \\ "))
+// fmt.Println(`           ` + grey(`  ,  |   `) + red("><") + grey(`   |  ,  `) + red(`   \        /\  ___/| \_\ \   \     \____|  | \// __ \\     /|  |_\  ___/|  | \/ `) + grey(`   |  |  `) + red("><") + grey(`  |  |  `))
+// fmt.Println(`           ` + grey(` . \  \      /  / . `)                      + red(`    \__/\  /  \___  >___  /    \______  /|__|  (____  /\/\_/ |____/\___  >__|    `) + grey(`   \  \      /  /  `) + "     .'\\`-'  ")
+// fmt.Println(`           ` + grey("  \\_'--`(  )'--'_/  ")                     + red(`         \/       \/    \/            \/            \/                 \/        `) + grey(`       '.__.'      `) + `  _.'   \    `)
+// fmt.Println(`           ` + grey(`    .--'/()\'--.    `)                      + red(`                                                                                 `) +      `          )        `  + `-;       \._ `)
+// fmt.Println(`           ` + grey("   /  /` \"\" `\\  \\   ")                  + red(`                                                                                 `) +      `          (        `  + "\\ `'-,_,-'\\  ")
+// fmt.Println(`           ` + grey(`      \      /      `)                      + red(`                                                                                 `) +      `          )        `  + "/____)_`-._\\ ")
